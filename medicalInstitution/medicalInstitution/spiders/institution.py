@@ -43,7 +43,7 @@ class InstitutionSpider(scrapy.Spider):
             img.show()
             captcha_code = input('captcha_code:\n')
         params = {
-            'NAME':'镇卫生院', #责任公司,大学校医院，有限公司，社区服务，大学医学院，中西医结合医院，中西结合医院，骨科医院，口腔医院，妇幼保健,儿童医院，乡卫生院
+            'NAME':'中心卫生', #责任公司,大学校医院，有限公司，社区服务，大学医学院，中西医结合医院，中西结合医院，骨科医院，口腔医院，妇幼保健,儿童医院，乡卫生院,镇卫生院,社区卫生
             'PASSCODE':'',
             'BEGIN_DATE':'',
             'END_DATE':'',
