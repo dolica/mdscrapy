@@ -18,3 +18,4 @@ class ShmedicalItem(scrapy.Item):
     level = scrapy.Field()
     memo = scrapy.Field()
     type = scrapy.Field()
+    telephone = scrapy.Field()

@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
+import json
+
 import scrapy
+from scrapy.http import Response
+
+from ..items import ShmedicalItem
 
 
 class CqddylSpider(scrapy.Spider):
@@ -17,9 +22,92 @@ class CqddylSpider(scrapy.Spider):
 							"5002340300":"开州区","5002350300":"云阳县","5002360300":"奉节县","5002370300":"巫山县","5002380300":"巫溪县",
 							"5002400300":"石柱县","5002410300":"秀山县","5002420300":"酉阳县","5002430300":"彭水县","5009030300":"两江新区",
 							"5001430300":"万盛区","5009100300":"成铁重庆社保部"}
+        scrapy.Request(url=self.start_urls[0],callback=self.parse)
 
     def parse(self, response):
-        print(response.body)
-        areacodes = response.css('select#jbjg option').extract()[1:]
-        print(areacodes)
-        pass
+        for code in self.area.keys():
+            formdata = {
+                'code': '033',
+                'ajbjg': code,
+                'bfwjgmc':'',
+                'afwjglx': '药店',
+                # 'ayydj':'',
+                'ftbydbz':''
+            }
+            # yield scrapy.FormRequest(url='http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_querySmXz.do', formdata=formdata, callback=self.parse_yl,meta={'currentpage':1,'code':code})
+            yield scrapy.FormRequest(url='http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_querySmXz.do', formdata=formdata,
+                                     callback=self.parse_yd, meta={'currentpage': 1, 'code': code})
+
+    def parse_yl(self,response: Response):
+        try:
+            datas = json.loads(response.body,encoding='utf-8') #type: dict
+            if datas.get('message') == '操作成功!':
+                results = datas.get('result')
+                for result in results:
+                    item = ShmedicalItem()
+                    item['name'] = result.get('fwjgmc')
+                    item['address'] = result.get('dz')
+                    item['type'] = result.get('yljglb')
+                    item['level'] = result.get('yydj')
+                    item['ssq'] = result.get('jbjgmc')
+                    item['telephone'] = result.get('lxdh','')
+                    item['memo'] = result.get('fwjgbh')
+                    yield item
+                page = datas.get('page')
+                tp = page['pageCount']
+                if response.meta['currentpage'] < tp:
+                    currentpage = response.meta['currentpage']+1
+                    code = response.meta['code']
+                    formdata = {
+                        'code': '033',
+                        'ajbjg': code,
+                        'bfwjgmc': '',
+                        'afwjglx': '医院',
+                        'ayydj': '',
+                        'currentPage': str(currentpage),
+                        'goPage': ''
+                    }
+                    yield scrapy.FormRequest(url='http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_querySmXz.do',
+                                             formdata=formdata,
+                                             callback=self.parse_next,
+                                             meta={'currentpage':currentpage,'code':code})
+
+        except Exception as e:
+            print(e)
+
+    def parse_yd(self,response: Response):
+        try:
+            datas = json.loads(response.body,encoding='utf-8') #type: dict
+            if datas.get('message') == '操作成功!':
+                results = datas.get('result')
+                for result in results:
+                    item = ShmedicalItem()
+                    item['name'] = result.get('fwjgmc')
+                    item['address'] = result.get('dz')
+                    item['type'] = result.get('yljglb')
+                    # item['level'] = result.get('yydj')
+                    item['ssq'] = result.get('jbjgmc')
+                    item['telephone'] = result.get('lxdh','')
+                    item['memo'] = result.get('fwjgbh')
+                    yield item
+                page = datas.get('page')
+                tp = page['pageCount']
+                if response.meta['currentpage'] < tp:
+                    currentpage = response.meta['currentpage']+1
+                    code = response.meta['code']
+                    formdata = {
+                        'code': '033',
+                        'ajbjg': code,
+                        'bfwjgmc': '',
+                        'afwjglx': '药店',
+                        'ayydj': '',
+                        'currentPage': str(currentpage),
+                        'goPage': ''
+                    }
+                    yield scrapy.FormRequest(url='http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_querySmXz.do',
+                                             formdata=formdata,
+                                             callback=self.parse_yd,
+                                             meta={'currentpage':currentpage,'code':code})
+
+        except Exception as e:
+            print(e)
